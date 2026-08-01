@@ -282,6 +282,9 @@
     border-bottom:1px dotted rgba(203,184,144,.5); padding-bottom:1px;
   }
   #fullSongLink:active { color:#ffd166; }
+  #musicBar.warn { border-color:rgba(255,120,120,.6); background:rgba(50,10,20,.82); }
+  #musicBar.warn #nowPlaying { color:#ff8f8f; }
+  #musicBar.warn #fullSongLink { color:#ffb3b3; border-bottom-color:rgba(255,150,150,.5); }
   body.music-on .stage { padding-bottom:140px; }
   body.music-on .letter-card { max-height:58vh; }
 
@@ -439,6 +442,8 @@ function pop(){ tone(240,0,.12,'square',.08); }
 const song = $('song');
 const SONG_SOURCES = [
   'song.mp3',
+  './song.mp3',
+  '1-03_Kannil_Anbai_-_MassTamilan_com.mp3',   // rename pannaama upload panna case
   'song.m4a',
   'song.ogg',
   'https://p.scdn.co/mp3-preview/c5191bf204136c412243d5ffa7324de219ad743a'
@@ -460,10 +465,13 @@ function happyBirthdayTune(){
 
 function goMelody(){
   fallbackTune = true; songOn = true;
-  $('nowPlaying').textContent = '🎵 Happy Birthday!';
+  $('nowPlaying').textContent = '⚠ song file kedaikala';
   $('playPauseBtn').style.display = 'none';
-  $('fullSongLink').style.display = 'none';
-  happyBirthdayTune();
+  $('fullSongLink').textContent = 'song.mp3 sari-a upload aacha paarunga';
+  $('fullSongLink').removeAttribute('href');
+  $('musicBar').classList.add('show','warn');
+  document.body.classList.add('music-on');
+  happyBirthdayTune();   // silence irukaadha, temp-a melody olikkum
 }
 
 /* mundhaadi source fail aana, adutha source ah try pannu */
