@@ -277,14 +277,8 @@
     transition:transform .15s;
   }
   #playPauseBtn:active { transform:scale(.9); }
-  #fullSongLink {
-    font-size:11.5px; color:#cbb890; text-decoration:none;
-    border-bottom:1px dotted rgba(203,184,144,.5); padding-bottom:1px;
-  }
-  #fullSongLink:active { color:#ffd166; }
   #musicBar.warn { border-color:rgba(255,120,120,.6); background:rgba(50,10,20,.82); }
   #musicBar.warn #nowPlaying { color:#ff8f8f; }
-  #musicBar.warn #fullSongLink { color:#ffb3b3; border-bottom-color:rgba(255,150,150,.5); }
   body.music-on .stage { padding-bottom:140px; }
   body.music-on .letter-card { max-height:58vh; }
 
@@ -374,10 +368,9 @@
         (mp3 illana keezha .m4a / .ogg um try pannikonga)              -->
 <audio id="song" loop preload="auto"></audio>
 <div id="musicBar">
-  <div id="nowPlaying">🎵 Kannil Anbai — James Vasanthan</div>
+  <div id="nowPlaying">🎵 Kannil Anbai · Easan</div>
   <div id="songControls">
     <button id="playPauseBtn" aria-label="play/pause">⏸</button>
-    <a id="fullSongLink" href="https://open.spotify.com/track/08dkc8RCeFEoT0H9e6u33E" target="_blank" rel="noopener">Full song ▶ Spotify</a>
   </div>
 </div>
 
@@ -448,7 +441,7 @@ const SONG_SOURCES = [
   'song.ogg',
   'https://p.scdn.co/mp3-preview/c5191bf204136c412243d5ffa7324de219ad743a'
 ];
-let srcIdx = -1, songOn = false, fallbackTune = false, userTapped = false;
+let srcIdx = -1, songOn = false, fallbackTune = false, wantPlay = false, exhausted = false;
 
 /* Original Happy Birthday melody — ellா source-um fail aana mattum */
 function happyBirthdayTune(){
@@ -464,14 +457,13 @@ function happyBirthdayTune(){
 }
 
 function goMelody(){
+  if(!wantPlay){ exhausted = true; return; }   // priming: innum play panna vேண்டாம்
   fallbackTune = true; songOn = true;
   $('nowPlaying').textContent = '⚠ song file kedaikala';
   $('playPauseBtn').style.display = 'none';
-  $('fullSongLink').textContent = 'song.mp3 sari-a upload aacha paarunga';
-  $('fullSongLink').removeAttribute('href');
   $('musicBar').classList.add('show','warn');
   document.body.classList.add('music-on');
-  happyBirthdayTune();   // silence irukaadha, temp-a melody olikkum
+  happyBirthdayTune();
 }
 
 /* mundhaadi source fail aana, adutha source ah try pannu */
@@ -480,19 +472,24 @@ function tryNextSource(){
   if(srcIdx >= SONG_SOURCES.length){ goMelody(); return; }
   song.src = SONG_SOURCES[srcIdx];
   song.load();
-  if(userTapped){
-    const p = song.play();
-    if(p && p.catch) p.catch(()=>{ /* error event handle pannum */ });
-  }
+  if(wantPlay){ const p = song.play(); if(p && p.catch) p.catch(()=>{}); }
 }
-/* file kedaikkala / play aagala na error event varum -> adutha source */
 song.addEventListener('error', tryNextSource);
 
+/* DEEPAM tap: song ah buffer mattum pannu (play illa) — letter varum
+   varaikkum ready-a irukkum, so appuram instant-a start aagum */
+function primeSong(){
+  if(srcIdx < 0) tryNextSource();
+}
+
+/* LETTER open aana odane: ippo thaan song play aaguthu.
+   "Onnu iruku paaru" button click = real gesture, so browser block pannaadhu */
 function playSong(){
+  wantPlay = true;
   $('musicBar').classList.add('show');
   document.body.classList.add('music-on');
-  userTapped = true;
-  if(srcIdx < 0) tryNextSource();      // mudhal source-a start pannu
+  if(exhausted){ goMelody(); return; }
+  if(srcIdx < 0){ tryNextSource(); }
   else { const p = song.play(); if(p && p.catch) p.catch(()=>{}); }
 }
 
@@ -509,7 +506,7 @@ song.addEventListener('pause', ()=>{ if(!song.ended) $('playPauseBtn').textConte
    STAGE 1 -> tap diya, diyas rise, move to cake
    ========================================================= */
 $('diyaTap').addEventListener('click', ()=>{
-  playSong();   // real tap = browser autoplay block pannaadhu
+  primeSong();   // song ah buffer pannu; letter open aana thaan play aagum
   chime();
   const s1 = $('stage1');
   for(let i=0;i<14;i++){
@@ -675,6 +672,7 @@ $('toLetter').addEventListener('click', ()=>{
   clearInterval(petalInterval);
   celebrating = false;
   showStage(4);
+  playSong();      // letter open aana odane song start (real click = autoplay OK)
   typeLetter();
 });
 function typeLetter(){
@@ -684,7 +682,7 @@ function typeLetter(){
   (function tick(){
     if(i < LETTER.length){
       el.textContent += LETTER[i];
-      if(LETTER[i] !== ' ' && LETTER[i] !== '\n' && i%3===0) tone(600+Math.random()*120, 0, .04, 'sine', .02);
+      if(!songOn && LETTER[i] !== ' ' && LETTER[i] !== '\n' && i%3===0) tone(600+Math.random()*120, 0, .04, 'sine', .02);
       i++;
       setTimeout(tick, LETTER[i-1]==='\n' ? 240 : 38);
     } else {
